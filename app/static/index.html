@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kan hücresi tespiti</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark"></span>
+    <div>
+      <h1>Kan hücresi tespiti</h1>
+      <p class="sub">YOLO26s · BCCD · mAP50 0.863</p>
+    </div>
+  </div>
+  <span class="badge">Araştırma amaçlı</span>
+</header>
+
+<nav class="tabs">
+  <button class="tab is-active" data-tab="single">Tek görsel</button>
+  <button class="tab" data-tab="batch">Toplu analiz</button>
+  <button class="tab" data-tab="scope">Kapsam testi</button>
+  <button class="tab" data-tab="about">Model kartı</button>
+</nav>
+
+<main>
+
+  <section class="panel is-active" id="panel-single">
+    <div class="grid">
+      <div class="col">
+        <div class="dropzone" id="drop">
+          <p class="dz-title">Görsel yükle</p>
+          <p class="dz-hint">Sürükle bırak veya tıkla · JPG, PNG · maks 10 MB</p>
+          <input type="file" id="file" accept="image/*" hidden>
+        </div>
+        <div class="samples">
+          <span class="samples-label">Örnekler</span>
+          <div class="sample-row" id="samples"></div>
+        </div>
+        <figure class="canvas" id="canvas" hidden>
+          <img id="preview" alt="Tespit sonucu">
+          <figcaption id="filename"></figcaption>
+        </figure>
+        <ul class="legend" id="legend" hidden>
+          <li><i data-c="rbc"></i>RBC</li>
+          <li><i data-c="wbc"></i>WBC</li>
+          <li><i data-c="plt"></i>Platelets</li>
+        </ul>
+      </div>
+
+      <div class="col">
+        <div class="controls">
+          <div class="ctrl">
+            <label for="conf">Güven eşiği <b id="conf-val">0.25</b></label>
+            <input type="range" id="conf" min="5" max="90" value="25" step="5">
+          </div>
+          <div class="ctrl">
+            <label for="iou">IoU eşiği <b id="iou-val">0.45</b></label>
+            <input type="range" id="iou" min="10" max="90" value="45" step="5">
+          </div>
+        </div>
+
+        <div class="stats" id="stats" hidden>
+          <div class="stat"><span>RBC</span><b id="n-rbc">0</b></div>
+          <div class="stat"><span>WBC</span><b id="n-wbc">0</b></div>
+          <div class="stat"><span>Platelets</span><b id="n-plt">0</b></div>
+        </div>
+
+        <dl class="meta" id="meta" hidden>
+          <div><dt>Toplam hücre</dt><dd id="m-total">–</dd></div>
+          <div><dt>RBC / WBC oranı</dt><dd id="m-ratio">–</dd></div>
+          <div><dt>Ortalama güven</dt><dd id="m-conf">–</dd></div>
+        </dl>
+
+        <div class="chart-card" id="conf-chart-card" hidden>
+          <p class="chart-title">Güven dağılımı</p>
+          <svg id="conf-chart" viewBox="0 0 320 120" role="img"
+               aria-label="Sınıf bazlı güven skoru dağılımı"></svg>
+        </div>
+
+        <div class="chart-card" id="sweep-card" hidden>
+          <p class="chart-title">Eşik–tespit eğrisi</p>
+          <svg id="sweep-chart" viewBox="0 0 320 120" role="img"
+               aria-label="Güven eşiğine göre tespit sayısı"></svg>
+          <p class="chart-note">Eşik yükseldikçe tespit sayısı düşer. Dikey çizgi
+             seçili eşiği gösterir.</p>
+        </div>
+
+        <div class="alert" id="alert" hidden></div>
+        <div class="empty" id="empty">Sonuçlar burada görünecek.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-batch">
+    <div class="dropzone" id="drop-batch">
+      <p class="dz-title">Birden fazla görsel yükle</p>
+      <p class="dz-hint">En fazla 30 dosya · her biri maks 10 MB</p>
+      <input type="file" id="files" accept="image/*" multiple hidden>
+    </div>
+    <div id="batch-out" hidden>
+      <div class="batch-head">
+        <p id="batch-summary"></p>
+        <button id="csv">CSV indir</button>
+      </div>
+      <div class="table-wrap"><table id="batch-table"></table></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-scope">
+    <div class="scope-intro">
+      <h2>Model kapsam dışını bildiremez</h2>
+      <p>Bu model üç sınıf tanır: alyuvar, akyuvar ve trombosit. Mimarisi gereği her
+         tespiti bu üçünden birine atamak zorundadır — "bilinmiyor" diye bir çıktısı
+         yoktur. Kan yaymasıyla ilgisi olmayan bir görsel yükleyin ve modelin yine de
+         kutu çizdiğini görün.</p>
+    </div>
+
+    <div class="dropzone" id="drop-scope">
+      <p class="dz-title">Herhangi bir görsel yükleyin</p>
+      <p class="dz-hint">Manzara, portre, ekran görüntüsü — ne olursa</p>
+      <input type="file" id="file-scope" accept="image/*" hidden>
+    </div>
+
+    <div class="scope-result" id="scope-out" hidden>
+      <figure class="canvas">
+        <img id="scope-img" alt="Kapsam dışı görselde model çıktısı">
+      </figure>
+      <div class="scope-side">
+        <div class="stat"><span>Tespit sayısı</span><b id="s-total">0</b></div>
+        <div class="stat"><span>Ortalama güven</span><b id="s-conf">0</b></div>
+        <dl class="meta" id="s-counts"></dl>
+        <div class="alert" id="s-verdict"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-about">
+    <div id="about-out">Yükleniyor…</div>
+  </section>
+
+</main>
+
+<footer class="disclaimer">
+  <strong>Kapsam ve sınırlar.</strong>
+  Model, Romanowsky tipi (Wright/Giemsa) boyalı periferik kan yayması görüntüleri
+  üzerinde eğitilmiştir. Farklı boyama protokolleri, büyütme oranları veya mikroskop
+  donanımıyla elde edilmiş görüntülerdeki başarımı ölçülmemiştir. Eğitim ve gösterim
+  amaçlıdır; tanı amaçlı kullanılamaz.
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>
