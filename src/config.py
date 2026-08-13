@@ -6,9 +6,9 @@ SAMPLES_DIR = ROOT / "data" / "samples"
 
 CLASS_NAMES = ["Platelets", "RBC", "WBC"]
 CLASS_COLORS = {
-    0: (95, 122, 224),    # Platelets
-    1: (128, 90, 61),     # RBC
-    2: (154, 178, 129),   # WBC
+    0: (88, 164, 224),    # Platelets #E0A458 -> BGR
+    1: (107, 115, 201),   # RBC       #C9736B -> BGR
+    2: (149, 91, 107),    # WBC       #6B5B95 -> BGR
 }
 
 CONF_THRESHOLD = 0.25
