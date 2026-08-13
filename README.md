@@ -240,6 +240,7 @@ prediction endpoints.
 ---
 
 ## Project structureblood-cell-yolo/
+
 ├── app/
 │ ├── main.py FastAPI service
 │ └── static/ Web interface (HTML, CSS, vanilla JS)
