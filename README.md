@@ -10,9 +10,13 @@ and platelets in peripheral blood smear images.
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![License](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
-**mAP50 0.863** · **mAP50-95 0.605** · YOLO26s · BCCD
+**mAP50 0.870** · **mAP50-95 0.601** · YOLO26n · BCCD
 
 </div>
+
+**[Live demo](https://blood-cell-yolo.onrender.com)**
+Hosted on Render's free tier; the first request after a period of inactivity
+takes 30-60 seconds while the container wakes up.
 
 > **Research and educational use only.** This is not a diagnostic device and
 > must not be used for clinical decision-making.
@@ -54,7 +58,7 @@ problem, and where it stops being reliable.
 
 ## Results
 
-Final model: **YOLO26s**, 9.5M parameters, 640px input. Trained for 135 epochs
+Final model: **YOLO26n**, 2.4M parameters, 640px input. Trained for 135 epochs
 with early stopping at epoch 95, cosine learning rate schedule, mosaic
 disabled for the last 20 epochs.
 
@@ -62,12 +66,12 @@ disabled for the last 20 epochs.
 
 | Class | Precision | Recall | mAP50 | mAP50-95 |
 |:---|---:|---:|---:|---:|
-| Platelets | 0.687 | 0.861 | 0.755 | 0.392 |
-| RBC | 0.657 | 0.879 | 0.866 | 0.636 |
-| WBC | 0.957 | 0.919 | 0.968 | 0.787 |
-| **Overall** | **0.767** | **0.886** | **0.863** | **0.605** |
+| Platelets | 0.703 | 0.861 | 0.778 | 0.389 |
+| RBC | 0.683 | 0.869 | 0.861 | 0.620 |
+| WBC | 0.957 | 0.973 | 0.970 | 0.795 |
+| **Overall** | **0.781** | **0.901** | **0.870** | **0.601** |
 
-Validation reaches mAP50 0.928 and mAP50-95 0.650. The test split is small —
+Validation reaches mAP50 0.926 and mAP50-95 0.649. The test split is small —
 36 images and only 36 platelet instances — so per-class test figures carry
 noticeable variance.
 
@@ -90,7 +94,7 @@ more informative outcome.
 |:---|:---|---:|:---|---:|---:|
 | Baseline | YOLO26n | 640 | default | 0.878 | 0.589 |
 | Higher resolution | YOLO26n | 1024 | default | 0.867 | 0.594 |
-| **Final** | **YOLO26s** | **640** | **colour + scale + rotation** | **0.863** | **0.605** |
+| **Final** | **YOLO26n** | **640** | **colour + scale + rotation** | **0.870** | **0.601** |
 
 ### Resolution did not help small objects
 
@@ -133,6 +137,24 @@ On the baseline run: mAP50 was 0.947 on train, 0.900 on validation, 0.878 on
 test. A 0.069 train-to-test gap on a 765-image dataset indicates the model
 generalises rather than memorises. Early stopping triggered at epoch 95 of a
 planned 150.
+
+### Model capacity is not the bottleneck
+
+The final model was retrained at nano scale to fit a 512 MB deployment target.
+The result was unexpected:
+
+| Model | Parameters | Weights | val mAP50 | val mAP50-95 | Inference |
+|:---|---:|---:|---:|---:|---:|
+| YOLO26s | 9.5M | 19 MB | 0.928 | 0.650 | 5.6 ms |
+| **YOLO26n** | **2.4M** | **5 MB** | **0.926** | **0.649** | **3.1 ms** |
+
+On the test split the nano model scores mAP50 0.870 against the small model's
+0.863 — a difference well inside noise for a 36-image split.
+
+A quarter of the parameters produce the same accuracy at nearly twice the
+speed. Combined with the resolution finding, this points in one direction: on
+a 765-image dataset with incomplete labels, the ceiling is set by the data,
+not by model capacity. The nano model is the one shipped.
 
 ### Confidence threshold
 
@@ -239,23 +261,33 @@ prediction endpoints.
 
 ---
 
-## Project structureblood-cell-yolo/
+## Project structure
 
+```text
+blood-cell-yolo/
 ├── app/
-│ ├── main.py FastAPI service
-│ └── static/ Web interface (HTML, CSS, vanilla JS)
+│   ├── main.py              FastAPI service
+│   └── static/              Web interface (HTML, CSS, vanilla JS)
 ├── src/
-│ ├── config.py Paths, class names, default thresholds
-│ ├── predict.py Inference wrapper with cached model loading
-│ ├── cli.py Command line entry point
-│ └── utils/viz.py Box drawing and cell counting
-├── models/best.pt Trained weights (19 MB)
-├── data/samples/ Example images from the test split
+│   ├── config.py            Paths, class names, default thresholds
+│   ├── predict.py           Inference wrapper, cached model loading
+│   ├── cli.py               Command line entry point
+│   └── utils/
+│       └── viz.py           Box drawing and cell counting
+├── models/
+│   └── best.pt              Trained YOLO26n weights (5 MB)
+├── data/
+│   └── samples/             Example images from the test split
 ├── reports/
-│ ├── results.csv Per-epoch training metrics
-│ └── figures/ Curves, confusion matrix, screenshots
+│   ├── results.csv          Per-epoch training metrics
+│   └── figures/             Curves, confusion matrix, screenshots
 ├── Dockerfile
-└── requirements.txt---
+├── requirements.txt
+└── README.md
+```
+
+---
+
 
 ## Dataset
 
