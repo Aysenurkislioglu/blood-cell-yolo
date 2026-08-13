@@ -1,6 +1,7 @@
 """FastAPI service for blood cell detection."""
 
 import base64
+from pathlib import Path
 import io
 
 import cv2
@@ -167,6 +168,5 @@ async def predict_batch(
 
 app.mount("/samples", StaticFiles(directory=str(ROOT / "data" / "samples")), name="samples")
 
-STATIC_DIR = ROOT / "app" / "static"
-if STATIC_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+app.mount("/", StaticFiles(directory=str(STATIC_DIR), html=True), name="static")
