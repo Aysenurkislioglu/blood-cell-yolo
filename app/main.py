@@ -77,6 +77,13 @@ def _domain_warning(output: dict) -> str | None:
     return None
 
 
+@app.on_event("startup")
+def warm_up():
+    """Load the model at boot so the first request is not slowed by it."""
+    import numpy as np
+    predict(np.zeros((640, 640, 3), dtype=np.uint8))
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
@@ -119,7 +126,8 @@ async def predict_endpoint(
     }
 
     if annotated:
-        ok, buf = cv2.imencode(".jpg", annotate(image, output))
+        ok, buf = cv2.imencode(".jpg", annotate(image, output),
+                               [cv2.IMWRITE_JPEG_QUALITY, 85])
         if ok:
             payload["annotated_image"] = (
                 "data:image/jpeg;base64," + base64.b64encode(buf).decode()
