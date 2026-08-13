@@ -9,3 +9,4 @@ datasets/
 runs/
 *.zip
 .env
+out.jpg
