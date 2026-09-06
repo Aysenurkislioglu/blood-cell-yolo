@@ -98,6 +98,7 @@ function render(d) {
   $("m-conf").textContent = d.mean_confidence.toFixed(2);
   $("meta").hidden = false;
 
+  renderClinical(d);
   drawConfidenceChart(d.detections);
   drawSweepChart(d.detections, d.thresholds.conf);
 
@@ -301,3 +302,43 @@ bindDrop($("drop-scope"), $("file-scope"), async (files) => {
   }
   $("s-verdict").textContent = verdict;
 });
+
+
+function renderClinical(d) {
+  const box = $("clinical");
+  const { RBC, WBC, Platelets } = d.counts;
+  const notes = [];
+
+  if (WBC > 0) {
+    const ratio = RBC / WBC;
+    if (ratio < 20) {
+      notes.push('<span class="flag">RBC/WBC oranı tek mikroskop alanı için ' +
+                 'beklenenden düşük — akyuvarlar fazla sayılmış olabilir.</span>');
+    } else if (ratio > 200) {
+      notes.push('<span class="flag">RBC/WBC oranı beklenenden yüksek — ' +
+                 'akyuvarlar kaçırılmış olabilir.</span>');
+    } else {
+      notes.push("RBC/WBC oranı tek alan için beklenen aralıkta.");
+    }
+  }
+
+  if (WBC > 15) {
+    notes.push('<span class="flag">Tek alanda ' + WBC + ' akyuvar olağandışı; ' +
+               'görüntü kapsam dışı olabilir.</span>');
+  }
+  if (RBC < 5 && d.total > 0) {
+    notes.push('<span class="flag">Alyuvar sayısı çok düşük — normal bir ' +
+               'yaymada alanın büyük kısmı alyuvarla kaplıdır.</span>');
+  }
+  if (Platelets === 0 && RBC > 20) {
+    notes.push("Trombosit bulunamadı. Küçük oldukları için en sık kaçırılan sınıf bu.");
+  }
+
+  if (!notes.length) { box.hidden = true; return; }
+
+  box.innerHTML = "<b>Tutarlılık kontrolü</b>" + notes.join("<br>") +
+    '<br><br><span style="color:var(--muted);font-size:12px">' +
+    "Bu değerlendirme tek bir görüntü alanına dayanır ve tam kan sayımı yerine geçmez." +
+    "</span>";
+  box.hidden = false;
+}
